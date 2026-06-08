@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Marketing Automation with n8n — Ninad Patil</title>
+<link href="https://fonts.googleapis.com/css2?family=Anybody:wght@300;400;600;800&family=Epilogue:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e10;
+    --bg2: #141416;
+    --bg3: #1c1c20;
+    --surface: #1e1e22;
+    --border: rgba(255,255,255,0.06);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0ede8;
+    --muted: #888480;
+    --dim: #444240;
+    --orange: #f97316;
+    --orange2: #fb923c;
+    --orange-glow: rgba(249,115,22,0.15);
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.1);
+    --purple: #a78bfa;
+    --display: 'Anybody', sans-serif;
+    --body: 'Epilogue', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--body); font-size: 17px; line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* grid texture */
+  body::before {
+    content: ''; pointer-events: none; position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(249,115,22,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(249,115,22,0.02) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1rem 2.5rem;
+    background: rgba(14,14,16,0.9); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-back {
+    font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+    text-decoration: none; display: flex; align-items: center; gap: 0.4rem;
+    letter-spacing: 0.06em; transition: color 0.2s;
+  }
+  .nav-back:hover { color: var(--orange); }
+  .nav-badge {
+    font-family: var(--mono); font-size: 0.65rem; color: var(--orange);
+    background: var(--orange-glow); border: 1px solid rgba(249,115,22,0.25);
+    padding: 0.25rem 0.75rem; border-radius: 100px; letter-spacing: 0.08em;
+  }
+  .nav-right { display: flex; gap: 1.5rem; align-items: center; }
+  .nav-links { display: flex; gap: 1.5rem; list-style: none; }
+  .nav-links a { font-size: 0.75rem; text-decoration: none; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--orange); }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative; z-index: 1;
+    min-height: 100vh; display: flex; flex-direction: column; justify-content: center;
+    padding: 9rem max(2.5rem, 6vw) 5rem;
+    overflow: hidden;
+  }
+  .hero-glow {
+    position: absolute; top: 20%; right: -10%;
+    width: 500px; height: 500px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .hero-glow2 {
+    position: absolute; bottom: -5%; left: -5%;
+    width: 350px; height: 350px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(96,165,250,0.06) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .hero-context {
+    display: flex; align-items: center; gap: 1rem; margin-bottom: 1.75rem;
+    opacity: 0; animation: fadeUp 0.6s ease 0.1s forwards;
+  }
+  .hero-context-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  .hero-context-text { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+  .hero-context-sep { color: var(--dim); }
+
+  .hero-title {
+    font-family: var(--display); font-weight: 800;
+    font-size: clamp(2.8rem, 7vw, 6.5rem);
+    line-height: 0.95; letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+    opacity: 0; animation: fadeUp 0.6s ease 0.22s forwards;
+  }
+  .hero-title .line2 { color: var(--orange); display: block; }
+  .hero-title .line3 { color: var(--muted); font-weight: 300; font-style: italic; font-family: var(--body); font-size: 0.45em; display: block; margin-top: 0.5rem; letter-spacing: 0; }
+
+  .hero-desc {
+    font-size: 1.05rem; color: var(--muted); max-width: 580px;
+    line-height: 1.8; margin-bottom: 2.5rem;
+    opacity: 0; animation: fadeUp 0.6s ease 0.36s forwards;
+  }
+  .hero-desc strong { color: var(--text); font-weight: 500; }
+
+  .hero-stats {
+    display: flex; flex-wrap: wrap; gap: 2.5rem; margin-bottom: 2.5rem;
+    opacity: 0; animation: fadeUp 0.6s ease 0.48s forwards;
+  }
+  .hero-stat { display: flex; flex-direction: column; gap: 0.2rem; }
+  .hero-stat-num { font-family: var(--display); font-size: 1.8rem; font-weight: 800; color: var(--orange); line-height: 1; }
+  .hero-stat-label { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .hero-tags {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+    opacity: 0; animation: fadeUp 0.6s ease 0.58s forwards;
+  }
+  .tag {
+    font-family: var(--mono); font-size: 0.72rem; padding: 0.3rem 0.75rem;
+    border-radius: 4px; letter-spacing: 0.04em;
+    border: 1px solid var(--border2); color: var(--muted);
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .tag:hover { border-color: var(--orange); color: var(--orange); }
+  .tag.o { border-color: rgba(249,115,22,0.3); color: var(--orange2); }
+  .tag.g { border-color: rgba(34,197,94,0.3); color: var(--green); }
+  .tag.b { border-color: rgba(96,165,250,0.3); color: var(--blue); }
+
+  /* ── LAYOUT ── */
+  .page-content { position: relative; z-index: 1; }
+  .section { padding: 5rem max(2.5rem, 6vw); max-width: 1160px; margin: 0 auto; }
+  .divider { height: 1px; background: var(--border); margin: 0 max(2.5rem, 6vw); position: relative; z-index: 1; }
+
+  .sec-eyebrow { font-family: var(--mono); font-size: 0.68rem; color: var(--orange); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 0.6rem; }
+  .sec-title { font-family: var(--display); font-size: clamp(1.8rem, 3.5vw, 2.6rem); font-weight: 800; line-height: 1.05; margin-bottom: 2rem; }
+  .sec-title em { font-style: italic; font-family: var(--body); color: var(--orange); font-weight: 300; }
+  .sec-lead { font-size: 1rem; color: var(--muted); line-height: 1.8; max-width: 700px; margin-bottom: 2.5rem; }
+
+  /* ── PROBLEM / SOLUTION GRID ── */
+  .problem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.5rem; }
+  .problem-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.75rem;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .problem-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .problem-card-icon { font-size: 1.4rem; margin-bottom: 0.85rem; }
+  .problem-card-label { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.5rem; }
+  .problem-card-title { font-family: var(--display); font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .problem-card-body { font-size: 0.9rem; color: var(--muted); line-height: 1.68; }
+  .problem-card.solved { border-color: rgba(34,197,94,0.2); }
+  .problem-card.solved .problem-card-label { color: var(--green); }
+
+  /* ── WORKFLOW CARDS ── */
+  .workflow-list { display: flex; flex-direction: column; gap: 3.5rem; }
+  .workflow-item { display: grid; grid-template-columns: 80px 1fr; gap: 2.5rem; align-items: start; }
+  .workflow-num-col { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .workflow-num {
+    width: 56px; height: 56px; border-radius: 12px;
+    background: var(--orange-glow); border: 1px solid rgba(249,115,22,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--display); font-size: 1.3rem; font-weight: 800; color: var(--orange);
+    flex-shrink: 0;
+  }
+  .workflow-connector { width: 1px; flex: 1; background: var(--border); min-height: 40px; margin-top: 8px; }
+  .workflow-item:last-child .workflow-connector { display: none; }
+  .workflow-body { padding-top: 0.5rem; }
+  .workflow-title { font-family: var(--display); font-size: 1.4rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .workflow-subtitle { font-family: var(--mono); font-size: 0.72rem; color: var(--orange); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.85rem; }
+  .workflow-desc { font-size: 0.97rem; color: var(--muted); line-height: 1.78; margin-bottom: 1.25rem; }
+  .workflow-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+  /* ── ARCHITECTURE STEPS ── */
+  .arch-steps { display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .arch-step {
+    background: var(--bg2); padding: 1.5rem 2rem;
+    display: grid; grid-template-columns: 36px 1fr; gap: 1.25rem; align-items: start;
+    transition: background 0.2s;
+  }
+  .arch-step:hover { background: var(--bg3); }
+  .arch-step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--orange-glow); border: 1px solid rgba(249,115,22,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 0.65rem; color: var(--orange);
+    flex-shrink: 0; margin-top: 0.15rem;
+  }
+  .arch-step-title { font-family: var(--display); font-size: 0.95rem; font-weight: 600; margin-bottom: 0.35rem; }
+  .arch-step-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.65; }
+  .arch-step-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.65rem; }
+  .chip { font-family: var(--mono); font-size: 0.62rem; padding: 0.15rem 0.45rem; background: var(--bg3); border: 1px solid var(--border2); border-radius: 3px; color: var(--muted); }
+  .chip.orange { background: var(--orange-glow); border-color: rgba(249,115,22,0.2); color: var(--orange2); }
+  .chip.green { background: var(--green-dim); border-color: rgba(34,197,94,0.2); color: var(--green); }
+  .chip.blue { background: var(--blue-dim); border-color: rgba(96,165,250,0.2); color: var(--blue); }
+
+  /* ── AGENT CHAIN DIAGRAM ── */
+  .agent-chain { display: flex; align-items: stretch; gap: 0; margin: 1.5rem 0; flex-wrap: wrap; }
+  .agent-box {
+    flex: 1; min-width: 160px; background: var(--bg2);
+    border: 1px solid var(--border); padding: 1.4rem 1.25rem;
+    position: relative; transition: border-color 0.2s;
+  }
+  .agent-box:hover { border-color: var(--border2); }
+  .agent-box:first-child { border-radius: 8px 0 0 8px; border-right: none; }
+  .agent-box:last-child { border-radius: 0 8px 8px 0; border-left: none; }
+  .agent-box:not(:first-child):not(:last-child) { border-radius: 0; border-right: none; }
+  .agent-arrow {
+    display: flex; align-items: center; padding: 0 0.5rem;
+    color: var(--orange); font-size: 1.1rem; flex-shrink: 0;
+    background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+  .agent-role { font-family: var(--mono); font-size: 0.6rem; color: var(--orange); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.4rem; }
+  .agent-name { font-family: var(--display); font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem; }
+  .agent-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.55; }
+
+  /* ── FEEDBACK LOOP VISUAL ── */
+  .loop-visual {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 2rem; margin-top: 1.5rem;
+  }
+  .loop-label { font-family: var(--mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; }
+  .loop-flow { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .loop-node {
+    font-family: var(--mono); font-size: 0.72rem; padding: 0.45rem 0.9rem;
+    border-radius: 6px; letter-spacing: 0.04em;
+  }
+  .loop-node.score-pass { background: var(--green-dim); border: 1px solid rgba(34,197,94,0.25); color: var(--green); }
+  .loop-node.score-fail { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #f87171; }
+  .loop-node.action { background: var(--orange-glow); border: 1px solid rgba(249,115,22,0.25); color: var(--orange2); }
+  .loop-node.neutral { background: var(--bg3); border: 1px solid var(--border2); color: var(--muted); }
+  .loop-arrow { color: var(--dim); font-size: 0.9rem; }
+  .loop-note { font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+
+  /* ── CODE BLOCK ── */
+  .code-block {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden; margin: 1.25rem 0;
+  }
+  .code-header {
+    padding: 0.6rem 1rem; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono); font-size: 0.65rem; color: var(--muted);
+    display: flex; justify-content: space-between; align-items: center;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .code-dots { display: flex; gap: 5px; }
+  .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .code-dot.r { background: #ff5f57; }
+  .code-dot.y { background: #febc2e; }
+  .code-dot.g { background: #28c840; }
+  pre {
+    padding: 1.25rem 1.5rem; overflow-x: auto;
+    font-family: var(--mono); font-size: 0.78rem; line-height: 1.65; color: var(--text);
+  }
+  .kw { color: var(--purple); }
+  .str { color: var(--green); }
+  .var { color: var(--orange2); }
+  .cmt { color: var(--dim); }
+  .num { color: var(--blue); }
+
+  /* ── OUTCOMES ── */
+  .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 2rem; }
+  .outcome-cell { background: var(--bg2); padding: 2rem 1.75rem; transition: background 0.2s; }
+  .outcome-cell:hover { background: var(--bg3); }
+  .outcome-num { font-family: var(--display); font-size: 2.8rem; font-weight: 800; color: var(--orange); line-height: 1; margin-bottom: 0.3rem; }
+  .outcome-label { font-size: 0.88rem; color: var(--muted); line-height: 1.45; }
+
+  .outcome-list { display: flex; flex-direction: column; gap: 0.9rem; }
+  .outcome-item {
+    display: flex; gap: 1rem; padding: 1.3rem 1.5rem;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; align-items: flex-start; transition: border-color 0.2s;
+  }
+  .outcome-item:hover { border-color: var(--border2); }
+  .outcome-item-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--orange); flex-shrink: 0; margin-top: 0.55rem; }
+  .outcome-item-text { font-size: 0.95rem; color: var(--muted); line-height: 1.68; }
+  .outcome-item-text strong { color: var(--text); font-weight: 600; }
+
+  /* ── SKILLS USED ── */
+  .skills-demonstrated { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.1rem; }
+  .skill-demo-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.5rem; transition: border-color 0.2s;
+  }
+  .skill-demo-card:hover { border-color: var(--orange); }
+  .skill-demo-icon { font-size: 1.3rem; margin-bottom: 0.75rem; }
+  .skill-demo-title { font-family: var(--display); font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem; }
+  .skill-demo-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+  /* ── BACK ── */
+  .back-section { text-align: center; padding: 4rem max(2.5rem, 6vw); position: relative; z-index: 1; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    font-family: var(--mono); font-size: 0.8rem; color: var(--muted);
+    text-decoration: none; padding: 0.85rem 1.75rem;
+    border: 1px solid var(--border2); border-radius: 6px; transition: all 0.2s;
+    letter-spacing: 0.06em;
+  }
+  .back-link:hover { color: var(--orange); border-color: var(--orange); }
+
+  footer {
+    border-top: 1px solid var(--border); padding: 1.75rem max(2.5rem, 6vw);
+    display: flex; justify-content: space-between; align-items: center;
+    position: relative; z-index: 1;
+  }
+  footer span { font-family: var(--mono); font-size: 0.68rem; color: var(--dim); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { opacity: 0; transform: translateY(12px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .fade-in.visible { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .fade-in { opacity: 1; transform: none; } }
+
+  @media (max-width: 860px) {
+    .problem-grid { grid-template-columns: 1fr; }
+    .workflow-item { grid-template-columns: 1fr; gap: 1rem; }
+    .workflow-num-col { flex-direction: row; align-items: center; gap: 1rem; }
+    .workflow-connector { display: none; }
+    .agent-chain { flex-direction: column; }
+    .agent-box { border-radius: 8px !important; border: 1px solid var(--border) !important; }
+    .agent-arrow { display: none; }
+  }
+  @media (max-width: 640px) {
+    nav { padding: 1rem 1.25rem; }
+    .nav-links { display: none; }
+    .hero { padding: 7rem 1.25rem 3.5rem; }
+    .section { padding: 3.5rem 1.25rem; }
+    .divider { margin: 0 1.25rem; }
+    footer { flex-direction: column; gap: 0.5rem; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <a class="nav-back" href="https://ninadpatil.netlify.app">← Portfolio</a>
+  <div class="nav-right">
+    <ul class="nav-links">
+      <li><a href="#workflows">Workflows</a></li>
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#outcomes">Outcomes</a></li>
+    </ul>
+    <span class="nav-badge">Internship Project</span>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+
+  <div class="hero-context">
+    <div class="hero-context-dot"></div>
+    <span class="hero-context-text">ChangingThePresent</span>
+    <span class="hero-context-sep">·</span>
+    <span class="hero-context-text">AI Engineering Internship · 2026</span>
+  </div>
+
+  <h1 class="hero-title">
+    AI Marketing<br>
+    <span class="line2">Automation</span>
+    <span class="line3">Three production n8n workflows that replaced manual marketing operations</span>
+  </h1>
+
+  <p class="hero-desc">
+    Built a complete <strong>AI marketing stack</strong> using n8n — a multi-agent campaign planner, a self-improving conversion rate optimizer, and an automated lead scraper. Together, these three workflows eliminated bottlenecks that were preventing a fast-growing product team from scaling its marketing operations.
+  </p>
+
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-num">3</div>
+      <div class="hero-stat-label">Production Workflows</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num">45%</div>
+      <div class="hero-stat-label">Lead Volume Increase</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num">22%</div>
+      <div class="hero-stat-label">Conversion Rate Lift</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num">80%</div>
+      <div class="hero-stat-label">Campaign Launch Time Cut</div>
+    </div>
+  </div>
+
+  <div class="hero-tags">
+    <span class="tag o">n8n</span>
+    <span class="tag o">Multi-Agent AI</span>
+    <span class="tag o">Agentic Workflows</span>
+    <span class="tag g">LLM Chaining</span>
+    <span class="tag g">Feedback Loops</span>
+    <span class="tag b">Apify</span>
+    <span class="tag b">REST APIs</span>
+    <span class="tag">JavaScript</span>
+    <span class="tag">Regex</span>
+    <span class="tag">Batch Processing</span>
+  </div>
+</section>
+
+<div class="page-content">
+<div class="divider"></div>
+
+<!-- ── PROBLEM / MISSION ── -->
+<section class="section">
+  <p class="sec-eyebrow fade-in">The Challenge</p>
+  <h2 class="sec-title fade-in">Three problems.<br><em>One AI stack.</em></h2>
+  <p class="sec-lead fade-in">ChangingThePresent's marketing team was falling behind a fast-growing product. Three distinct operational bottlenecks needed to be solved — and all three had to be automated.</p>
+
+  <div class="problem-grid">
+    <div class="problem-card fade-in">
+      <div class="problem-card-icon">🗺️</div>
+      <div class="problem-card-label">Problem 01</div>
+      <div class="problem-card-title">Fragmented Marketing Strategy</div>
+      <p class="problem-card-body">Messaging varied across channels with no central narrative. Each campaign started from scratch with no unified direction, wasting time and diluting brand voice.</p>
+    </div>
+    <div class="problem-card solved fade-in">
+      <div class="problem-card-icon">✅</div>
+      <div class="problem-card-label">Solution</div>
+      <div class="problem-card-title">Multi-Agent Campaign Planner</div>
+      <p class="problem-card-body">Three specialist AI agents (Brand Strategist, Content Strategist, Paid Ads Expert) collaborate in parallel to produce a unified, multi-channel marketing plan from a single brief.</p>
+    </div>
+    <div class="problem-card fade-in">
+      <div class="problem-card-icon">📉</div>
+      <div class="problem-card-label">Problem 02</div>
+      <div class="problem-card-title">Poor Landing Page Conversion</div>
+      <p class="problem-card-body">Landing pages weren't converting, but nobody had the bandwidth to systematically test and improve them. Optimization was ad hoc and inconsistent.</p>
+    </div>
+    <div class="problem-card solved fade-in">
+      <div class="problem-card-icon">✅</div>
+      <div class="problem-card-label">Solution</div>
+      <div class="problem-card-title">Self-Improving CRO Optimizer</div>
+      <p class="problem-card-body">A 3-agent chain that generates CRO ideas, evaluates them against 5 scoring criteria, and loops back up to 3 times with feedback until output quality exceeds threshold.</p>
+    </div>
+    <div class="problem-card fade-in">
+      <div class="problem-card-icon">🔍</div>
+      <div class="problem-card-label">Problem 03</div>
+      <div class="problem-card-title">Manual Lead Generation</div>
+      <p class="problem-card-body">Sales team was searching Google Maps one business at a time. Slow, inconsistent, and impossible to scale — with no way to extract contact information automatically.</p>
+    </div>
+    <div class="problem-card solved fade-in">
+      <div class="problem-card-icon">✅</div>
+      <div class="problem-card-label">Solution</div>
+      <div class="problem-card-title">Automated Lead Scraper</div>
+      <p class="problem-card-body">Pulls 50 business listings from Google Maps via Apify, cleans and deduplicates URLs, then batch-scrapes email addresses using regex — delivering structured contact lists automatically.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── WORKFLOWS ── -->
+<section class="section" id="workflows">
+  <p class="sec-eyebrow fade-in">The Workflows</p>
+  <h2 class="sec-title fade-in">Three workflows.<br><em>Built to production.</em></h2>
+
+  <div class="workflow-list">
+
+    <!-- WORKFLOW 1 -->
+    <div class="workflow-item fade-in">
+      <div class="workflow-num-col">
+        <div class="workflow-num">01</div>
+        <div class="workflow-connector"></div>
+      </div>
+      <div class="workflow-body">
+        <div class="workflow-subtitle">Multi-Agent System · Parallel Execution</div>
+        <div class="workflow-title">Campaign Strategy Planner</div>
+        <p class="workflow-desc">A Campaign Brief node holds four fields — business context, objective, target audience, and budget — and fans out to three specialist AI agents running in parallel. Each agent is isolated in its own branch, preventing cross-contamination of perspectives. The Brand Strategist defines positioning and voice. The Content Strategist maps channel-specific messaging. The Paid Ads Expert allocates budget and defines targeting parameters. Their outputs are collected and merged into a single unified marketing plan.</p>
+        <div class="workflow-tags">
+          <span class="tag o">Parallel Agents</span>
+          <span class="tag o">Fan-Out Pattern</span>
+          <span class="tag g">Brand Strategist</span>
+          <span class="tag g">Content Strategist</span>
+          <span class="tag g">Paid Ads Expert</span>
+          <span class="tag b">n8n Merge Node</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORKFLOW 2 -->
+    <div class="workflow-item fade-in">
+      <div class="workflow-num-col">
+        <div class="workflow-num">02</div>
+        <div class="workflow-connector"></div>
+      </div>
+      <div class="workflow-body">
+        <div class="workflow-subtitle">Sequential Chaining · Self-Improving Loop</div>
+        <div class="workflow-title">Conversion Rate Optimizer</div>
+        <p class="workflow-desc">Unlike the parallel structure of Workflow 1, this uses sequential chaining — each agent builds directly on the previous agent's output. The workflow scrapes and cleans the landing page, then passes it through a 3-agent chain. A quality gate then checks the average score. If it doesn't pass, the Judge's critique is fed back to the Idea Generator and the loop retries — up to 3 times, getting smarter with each iteration.</p>
+
+        <!-- Agent Chain Diagram -->
+        <div class="agent-chain">
+          <div class="agent-box">
+            <div class="agent-role">Agent 1</div>
+            <div class="agent-name">Idea Generator</div>
+            <div class="agent-desc">Scrapes landing page, produces 10 CRO ideas. Incorporates feedback from previous iteration if retrying.</div>
+          </div>
+          <div class="agent-arrow">→</div>
+          <div class="agent-box">
+            <div class="agent-role">Agent 2</div>
+            <div class="agent-name">Parameter Setter</div>
+            <div class="agent-desc">Defines 5 strict evaluation criteria (Clarity, Feasibility, Impact, Innovation, Adherence) to judge the ideas.</div>
+          </div>
+          <div class="agent-arrow">→</div>
+          <div class="agent-box">
+            <div class="agent-role">Agent 3</div>
+            <div class="agent-name">The Judge</div>
+            <div class="agent-desc">Scores all ideas against the 5 criteria, outputs structured JSON with scores and a critique of weaknesses.</div>
+          </div>
+        </div>
+
+        <!-- Feedback Loop Visual -->
+        <div class="loop-visual">
+          <div class="loop-label">Feedback Loop Logic</div>
+          <div class="loop-flow">
+            <span class="loop-node neutral">Judge Output</span>
+            <span class="loop-arrow">→</span>
+            <span class="loop-node neutral">Parse JSON + Avg Score</span>
+            <span class="loop-arrow">→</span>
+            <span class="loop-node neutral">Score &gt; 7?</span>
+            <span class="loop-arrow">→</span>
+            <span class="loop-node score-pass">✓ Accept Output</span>
+          </div>
+          <div class="loop-flow">
+            <span class="loop-node neutral">Score ≤ 7</span>
+            <span class="loop-arrow">→</span>
+            <span class="loop-node neutral">Retries &lt; 3?</span>
+            <span class="loop-arrow">→</span>
+            <span class="loop-node action">Store Feedback + Increment</span>
+            <span class="loop-arrow">→</span>
+            <span class="loop-node action">Loop Back to Agent 1</span>
+          </div>
+          <p class="loop-note">The Judge's critique is injected into Agent 1's prompt on retry, forcing the Idea Generator to address specific weaknesses. Each iteration produces meaningfully better output.</p>
+        </div>
+
+        <div class="workflow-tags" style="margin-top:1.25rem;">
+          <span class="tag o">Sequential Chaining</span>
+          <span class="tag o">Feedback Loop</span>
+          <span class="tag g">JSON Parsing</span>
+          <span class="tag g">Score Threshold Gate</span>
+          <span class="tag b">HTTP Scraping</span>
+          <span class="tag b">Markdown Node</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORKFLOW 3 -->
+    <div class="workflow-item fade-in">
+      <div class="workflow-num-col">
+        <div class="workflow-num">03</div>
+        <div class="workflow-connector"></div>
+      </div>
+      <div class="workflow-body">
+        <div class="workflow-subtitle">Batch Processing · API Integration · Regex</div>
+        <div class="workflow-title">Lead Scraper</div>
+        <p class="workflow-desc">Takes a search query and location from an input form, fires a POST request to Apify's Google Maps Scraper, then retrieves up to 50 business listings via a GET request. The raw Apify data is cleaned — only website URLs are extracted, duplicates removed, capped at 10 — before being fed into a Split In Batches loop that visits each site and extracts email addresses with regex. Two parallel streams then merge the business data and email data into a single structured output.</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><div class="code-dot r"></div><div class="code-dot y"></div><div class="code-dot g"></div></div>
+            <span>Email Extraction — Regex Pattern</span>
+          </div>
+          <pre><span class="cmt">// Extract emails from scraped HTML, filter out image extensions</span>
+<span class="kw">const</span> <span class="var">html</span> = $input.item.json.data;
+<span class="kw">const</span> <span class="var">emailRegex</span> = <span class="str">/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g</span>;
+<span class="kw">const</span> <span class="var">imageExtensions</span> = <span class="str">/\.(png|jpg|jpeg|gif|svg|webp)$/i</span>;
+
+<span class="kw">const</span> <span class="var">emails</span> = (<span class="var">html</span>.match(<span class="var">emailRegex</span>) || [])
+  .filter(<span class="var">e</span> => !<span class="var">imageExtensions</span>.test(<span class="var">e</span>));
+
+<span class="kw">return</span> [{ json: { emails: [...<span class="kw">new</span> <span class="var">Set</span>(<span class="var">emails</span>)] } }];</pre>
+        </div>
+
+        <div class="workflow-tags">
+          <span class="tag o">Apify Integration</span>
+          <span class="tag o">Batch Processing</span>
+          <span class="tag g">Regex Email Extraction</span>
+          <span class="tag g">Data Deduplication</span>
+          <span class="tag b">POST + GET APIs</span>
+          <span class="tag b">Parallel Streams</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── ARCHITECTURE ── -->
+<section class="section" id="architecture">
+  <p class="sec-eyebrow fade-in">Technical Architecture</p>
+  <h2 class="sec-title fade-in">How the CRO<br><em>optimizer was built</em></h2>
+  <p class="sec-lead fade-in">The self-improving workflow is the most technically sophisticated of the three — here's a step-by-step breakdown of how it was constructed in n8n.</p>
+
+  <div class="arch-steps fade-in">
+    <div class="arch-step">
+      <div class="arch-step-num">1</div>
+      <div>
+        <div class="arch-step-title">Page Ingestion & Cleaning</div>
+        <div class="arch-step-desc">HTTP Request node scrapes raw HTML from the landing page URL. A Code node strips headers, navs, and footers to extract only the main content. A Markdown node converts cleaned HTML to readable text for LLM consumption.</div>
+        <div class="arch-step-chips">
+          <span class="chip orange">HTTP Request</span><span class="chip orange">Code Node</span><span class="chip orange">Markdown Node</span>
+        </div>
+      </div>
+    </div>
+    <div class="arch-step">
+      <div class="arch-step-num">2</div>
+      <div>
+        <div class="arch-step-title">Loop Infrastructure Setup</div>
+        <div class="arch-step-desc">Before the agent chain runs, two nodes initialise the retry infrastructure: an Edit Fields node sets retry_count to 0 and feedback_context to empty; a Merge node is positioned downstream to receive either initial data or feedback from retry attempts.</div>
+        <div class="arch-step-chips">
+          <span class="chip green">Init Variables (Set)</span><span class="chip green">Loop Merge (Merge)</span>
+        </div>
+      </div>
+    </div>
+    <div class="arch-step">
+      <div class="arch-step-num">3</div>
+      <div>
+        <div class="arch-step-title">3-Agent Sequential Chain</div>
+        <div class="arch-step-desc">Agent 1 (Idea Generator) receives landing page content + any feedback context and produces 10 CRO ideas. Agent 2 (Parameter Setter) reads those ideas and defines 5 evaluation criteria. Agent 3 (Judge) scores all ideas against the criteria and outputs structured JSON with per-criterion scores and a written critique.</div>
+        <div class="arch-step-chips">
+          <span class="chip orange">Agent 1</span><span class="chip orange">Agent 2</span><span class="chip orange">Agent 3</span><span class="chip">JSON Output Schema</span>
+        </div>
+      </div>
+    </div>
+    <div class="arch-step">
+      <div class="arch-step-num">4</div>
+      <div>
+        <div class="arch-step-title">JSON Parsing & Score Calculation</div>
+        <div class="arch-step-desc">The Judge's output is a raw JSON string. A Code node parses it, strips any markdown code fences the LLM might have added, calculates the average of the 5 scores, and injects a final_score field for the IF node to evaluate.</div>
+        <div class="arch-step-chips">
+          <span class="chip green">JSON.parse()</span><span class="chip green">Avg Score Calc</span><span class="chip green">final_score injection</span>
+        </div>
+      </div>
+    </div>
+    <div class="arch-step">
+      <div class="arch-step-num">5</div>
+      <div>
+        <div class="arch-step-title">Quality Gate + Feedback Loop Closure</div>
+        <div class="arch-step-desc">IF node checks final_score > 7. Pass: proceeds to final output packaging. Fail: a second IF checks retry_count &lt; 3. If retries remain, an Update Loop Params node increments the counter, stores the Judge's critique as feedback_context, and wires back to Loop Merge — restarting the chain with the critique injected into Agent 1's prompt.</div>
+        <div class="arch-step-chips">
+          <span class="chip blue">IF Node (score)</span><span class="chip blue">IF Node (retries)</span><span class="chip blue">Update Loop Params</span><span class="chip blue">Final Output</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── OUTCOMES ── -->
+<section class="section" id="outcomes">
+  <p class="sec-eyebrow fade-in">Results</p>
+  <h2 class="sec-title fade-in">Outcomes &<br><em>Impact</em></h2>
+
+  <div class="outcomes-grid fade-in">
+    <div class="outcome-cell">
+      <div class="outcome-num">45%</div>
+      <div class="outcome-label">Increase in qualified lead volume from automated scraping</div>
+    </div>
+    <div class="outcome-cell">
+      <div class="outcome-num">22%</div>
+      <div class="outcome-label">Improvement in conversion rates via CRO optimizer</div>
+    </div>
+    <div class="outcome-cell">
+      <div class="outcome-num">80%</div>
+      <div class="outcome-label">Reduction in campaign launch time from multi-agent planner</div>
+    </div>
+    <div class="outcome-cell">
+      <div class="outcome-num">3×</div>
+      <div class="outcome-label">Max self-improvement iterations in the feedback loop</div>
+    </div>
+  </div>
+
+  <div class="outcome-list">
+    <div class="outcome-item fade-in">
+      <div class="outcome-item-dot"></div>
+      <div class="outcome-item-text"><strong>Replaced manual marketing operations end-to-end</strong> — strategy, optimization, and lead generation previously required dedicated human hours; all three are now fully automated and triggered on demand.</div>
+    </div>
+    <div class="outcome-item fade-in">
+      <div class="outcome-item-dot"></div>
+      <div class="outcome-item-text"><strong>Demonstrated self-correcting AI system design</strong> — the feedback loop architecture shows how to build LLM workflows that improve their own output quality without human intervention, a pattern directly applicable to production MLOps.</div>
+    </div>
+    <div class="outcome-item fade-in">
+      <div class="outcome-item-dot"></div>
+      <div class="outcome-item-text"><strong>Designed for scale</strong> — batch processing, deduplication, and the 3-retry cap ensure workflows are fault-tolerant and cost-efficient at higher volumes.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── SKILLS DEMONSTRATED ── -->
+<section class="section">
+  <p class="sec-eyebrow fade-in">Skills Demonstrated</p>
+  <h2 class="sec-title fade-in">What this project<br><em>shows a hiring manager</em></h2>
+
+  <div class="skills-demonstrated">
+    <div class="skill-demo-card fade-in">
+      <div class="skill-demo-icon">🤖</div>
+      <div class="skill-demo-title">Agentic AI Architecture</div>
+      <div class="skill-demo-desc">Designed both parallel fan-out (multi-agent) and sequential chain patterns — the two fundamental architectures in production agentic AI systems.</div>
+    </div>
+    <div class="skill-demo-card fade-in">
+      <div class="skill-demo-icon">🔄</div>
+      <div class="skill-demo-title">Self-Correcting Feedback Loops</div>
+      <div class="skill-demo-desc">Built a system that evaluates its own output, stores critique as structured context, and iterates — directly relevant to MLOps, RLHF, and eval-driven LLM development.</div>
+    </div>
+    <div class="skill-demo-card fade-in">
+      <div class="skill-demo-icon">🔌</div>
+      <div class="skill-demo-title">API Integration & Data Pipelines</div>
+      <div class="skill-demo-desc">Chained POST and GET requests to external APIs (Apify), handled auth headers, parsed nested JSON responses, and cleaned data before downstream processing.</div>
+    </div>
+    <div class="skill-demo-card fade-in">
+      <div class="skill-demo-icon">⚡</div>
+      <div class="skill-demo-title">Prompt Engineering</div>
+      <div class="skill-demo-desc">Crafted structured prompts with dynamic context injection — including conditional feedback interpolation, role assignment, and strict JSON output schemas for reliable parsing.</div>
+    </div>
+    <div class="skill-demo-card fade-in">
+      <div class="skill-demo-icon">📦</div>
+      <div class="skill-demo-title">Batch Processing & Deduplication</div>
+      <div class="skill-demo-desc">Used Split In Batches for efficient per-item processing, implemented regex-based email extraction, and applied Set-based deduplication for clean output.</div>
+    </div>
+    <div class="skill-demo-card fade-in">
+      <div class="skill-demo-icon">📊</div>
+      <div class="skill-demo-title">Business Impact Delivery</div>
+      <div class="skill-demo-desc">Translated three real operational bottlenecks into automated solutions with measurable outcomes — 45% lead growth, 22% CRO lift, 80% campaign time reduction.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<div class="back-section fade-in">
+  <a href="https://ninadpatil.netlify.app" class="back-link">← Back to Portfolio</a>
+</div>
+
+<footer>
+  <span>Ninad Patil · AI Engineering Intern · ChangingThePresent</span>
+  <span>AI Marketing Automation with n8n</span>
+</footer>
+</div><!-- end page-content -->
+
+<script>
+  if ('IntersectionObserver' in window) {
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.06, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+    setTimeout(() => document.querySelectorAll('.fade-in').forEach(el => el.classList.add('visible')), 1200);
+  } else {
+    document.querySelectorAll('.fade-in').forEach(el => el.classList.add('visible'));
+  }
+</script>
+</body>
+</html>
